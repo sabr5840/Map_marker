@@ -2,15 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
-import * as ImagePicker from 'expo-image-picker';
-import { app, database, storage } from './firebase'; 
-import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import { storge } from './firebase'
-import { ref, uploadBytes } from 'firebase/storage'
-import { getStorage, uploadString, getDownloadURL } from 'firebase/storage';
-import ClearCache from 'react-native-clear-cache';
-
-
+import { app, database } from './firebase'; 
+import { collection, addDoc, onSnapshot } from 'firebase/firestore';
 
 export default function App() {
   const [markers, setMarkers] = useState([]);
@@ -55,76 +48,36 @@ export default function App() {
     };
   }, []);
 
-  async function selectImage(location) {
-    try {
-      let result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 1,
+  useEffect(() => {
+    const markersCollection = collection(database, 'markers');
+    const unsubscribe = onSnapshot(markersCollection, (snapshot) => {
+      const updatedMarkers = [];
+      snapshot.forEach((doc) => {
+        const markerData = doc.data();
+        updatedMarkers.push({
+          coordinate: { latitude: markerData.latitude, longitude: markerData.longitude },
+          key: doc.id,
+          title: "Great place"
+        });
       });
-  
-      console.log("ImagePicker result:", result);
-  
-      if (result.cancelled) {
-        console.log("Image selection cancelled.");
-        return;
-      }
-  
-      const selectedImage = result.assets[0];
-      if (!selectedImage.uri) {
-        throw new Error("Selected image URI is undefined.");
-      }
-  
-      console.log("Selected image result:", selectedImage.uri);
-  
-      // Upload image to Firebase Storage
-      uploadImage(selectedImage.uri, location);
-    } catch (error) {
-      console.error("Error selecting image:", error);
-      alert("Der opstod en fejl under valg af billedet. Prøv igen senere.");
-    }
-  }
-  
-  async function uploadImage(imageUri, location) {
-    try {
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
-      const imageName = new Date().getTime() + '.jpg';
-      const storageRef = ref(storage, 'images/' + imageName);
-    
-      // Brug uploadBytes til at uploade blob-data
-      await uploadBytes(storageRef, blob);
-    
-      // Få download URL'en for det uploaded billede
-      const downloadURL = await getDownloadURL(storageRef);
-    
-      // Gem GPS-lokationen og download URL'en i Firestore
-      const markersCollection = collection(database, 'markers');
-      await addDoc(markersCollection, {
-        latitude: location.latitude,
-        longitude: location.longitude,
-        imageURL: downloadURL
-      });
-    } catch (error) {
-      console.error("Error uploading image: ", error);
-      // Vis fejlmeddelelse til brugeren
-      alert("Der opstod en fejl under upload af billedet. Prøv igen senere.");
-    }
-  }
+      setMarkers(updatedMarkers);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  function addMarker(data) {
+  async function addMarker(data) {
     const { latitude, longitude } = data.nativeEvent.coordinate;
-    const newMarker = {
-      coordinate: { latitude, longitude },
-      key: data.nativeEvent.timestamp,
-      title: "Great place"
-    };
-    setMarkers([...markers, newMarker]);
-    
-    // Kald selectImage med lokationen for den nye markør
-    console.log("Marker location:", { latitude, longitude });
-    selectImage({ latitude, longitude }); // Overfør lokationen som et objekt
+    const markersCollection = collection(database, 'markers');
+    try {
+      const newMarkerRef = await addDoc(markersCollection, {
+        latitude: latitude,
+        longitude: longitude
+      });
+      console.log("Marker added with ID: ", newMarkerRef.id);
+    } catch (error) {
+      console.error("Error adding marker: ", error);
+      alert("An error occurred while adding the marker. Please try again later.");
+    }
   }
 
   function onMarkerPressed(text) {
