@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { StyleSheet, View, Image } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { StyleSheet, View, Image, Modal, Text, TouchableOpacity } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
@@ -16,6 +16,8 @@ export default function App() {
     latitudeDelta: 20,
     longitudeDelta: 20
   });
+  const [selectedImage, setSelectedImage] = useState(null); // Til visning af det valgte billede
+  const [modalVisible, setModalVisible] = useState(false); // Til styring af synligheden af modalen
 
   const mapRef = useRef(null); 
   const locationSub = useRef(null);
@@ -144,9 +146,8 @@ export default function App() {
   function onMarkerPressed(imageURL) {
     // Vis billedet for den valgte markør
     console.log("Marker imageURL:", imageURL);
-    // Du kan vise billedet på en eller anden måde, f.eks. med en modal eller i en separat komponent
-    // Her viser jeg bare billedet i konsollen
-    console.log("Image URL:", imageURL);
+    setSelectedImage(imageURL); // Gem URL'en for det valgte billede
+    setModalVisible(true); // Vis modalen
   }
 
   return (
@@ -166,6 +167,27 @@ export default function App() {
           />
         ))}
       </MapView>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(false);
+        }}
+      >
+        <View style={styles.modalView}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setModalVisible(false)}
+          >
+            <Text style={styles.closeButtonText}>Close</Text>
+          </TouchableOpacity>
+          <Image
+            source={{ uri: selectedImage }}
+            style={styles.image}
+          />
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -176,5 +198,28 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  modalView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 5,
+  },
+  closeButtonText: {
+    fontSize: 16,
+    color: '#000',
+  },
+  image: {
+    width: 300,
+    height: 300,
+    resizeMode: 'contain',
   },
 });
