@@ -18,6 +18,7 @@ export default function App() {
   });
   const [selectedImage, setSelectedImage] = useState(null); // Til visning af det valgte billede
   const [modalVisible, setModalVisible] = useState(false); // Til styring af synligheden af modalen
+  const [selectedMarker, setSelectedMarker] = useState(null); // Gem den valgte markør
 
   const mapRef = useRef(null); 
   const locationSub = useRef(null);
@@ -143,10 +144,11 @@ export default function App() {
     selectImage({ latitude, longitude }); // Overfør lokationen som et objekt
   }
 
-  function onMarkerPressed(imageURL) {
+  function onMarkerPressed(imageURL, coordinate) {
     // Vis billedet for den valgte markør
     console.log("Marker imageURL:", imageURL);
     setSelectedImage(imageURL); // Gem URL'en for det valgte billede
+    setSelectedMarker(coordinate); // Gem den valgte markørs koordinater
     setModalVisible(true); // Vis modalen
   }
 
@@ -163,7 +165,7 @@ export default function App() {
             coordinate={marker.coordinate}
             key={index}
             title={marker.title}
-            onPress={() => onMarkerPressed(marker.imageURL)}
+            onPress={() => onMarkerPressed(marker.imageURL, marker.coordinate)}
           />
         ))}
       </MapView>
@@ -176,21 +178,29 @@ export default function App() {
         }}
       >
         <View style={styles.modalView}>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setModalVisible(false)}
-          >
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
+         {selectedMarker && (
+            <View style={styles.coordinatesContainer}>
+              <Text style={styles.coordinatesText}>Latitude: {selectedMarker.latitude.toFixed(6)}</Text>
+              <Text style={styles.coordinatesText}>Longitude: {selectedMarker.longitude.toFixed(6)}</Text>
+            </View>
+          )}
           <Image
             source={{ uri: selectedImage }}
             style={styles.image}
           />
+          
+          <TouchableOpacity
+            style={styles.closeButton} // Justeret bredden på knappen
+            onPress={() => setModalVisible(false)}
+          >
+            <Text style={styles.closeButtonText}>Close</Text>
+          </TouchableOpacity>
         </View>
       </Modal>
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -205,21 +215,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
+ 
   closeButton: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    backgroundColor: '#fff',
+    position: 'center',
+    backgroundColor: '#DDDDDD',
     padding: 10,
     borderRadius: 5,
+    marginBottom: 5, 
+    width: 350,
+    marginTop: 3,
+    elevation: 5, 
+
+
   },
   closeButtonText: {
     fontSize: 16,
-    color: '#000',
+    color: 'black',
+    textAlign: 'center',
+
+
   },
   image: {
-    width: 300,
-    height: 300,
+    width: 350,
+    height: 350,
     resizeMode: 'contain',
   },
+
+  coordinatesContainer: {
+    position: 'center',
+    backgroundColor: '#DDDDDD',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 5, 
+    width: 350,
+    marginTop: 3,
+    elevation: 5, 
+  },
+  coordinatesText: {
+    fontSize: 16,
+    color: 'black',
+    textAlign: 'center',
+  },
+
 });
+
