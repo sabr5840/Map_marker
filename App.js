@@ -57,7 +57,7 @@ export default function App() {
         newMarkers.push({
           coordinate: { latitude, longitude },
           imageURL: imageURL,
-          key: doc.id,
+          key: doc.id, // Brug Firestore-dokumentets ID som markørens ID
           title: "Great place"
         });
       });
@@ -72,7 +72,7 @@ export default function App() {
     };
   }, []);
 
-  async function selectImage(location) {
+  async function selectImage(location, markerId) {
     try {
       let result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -96,14 +96,14 @@ export default function App() {
       console.log("Selected image result:", selectedImage.uri);
   
       // Upload image to Firebase Storage
-      uploadImage(selectedImage.uri, location);
+      uploadImage(selectedImage.uri, location, markerId);
     } catch (error) {
       console.error("Error selecting image:", error);
       alert("Der opstod en fejl under valg af billedet. Prøv igen senere.");
     }
   }
   
-  async function uploadImage(imageUri, location) {
+  async function uploadImage(imageUri, location, markerId) {
     try {
       const response = await fetch(imageUri);
       const blob = await response.blob();
@@ -119,8 +119,7 @@ export default function App() {
       // Gem GPS-lokationen og download URL'en i Firestore
       const markersCollection = collection(database, 'markers');
       await addDoc(markersCollection, {
-        latitude: location.latitude,
-        longitude: location.longitude,
+        markerId: markerId, // Gem markørens ID i Firestore
         imageURL: downloadURL
       });
     } catch (error) {
@@ -132,16 +131,17 @@ export default function App() {
 
   function addMarker(data) {
     const { latitude, longitude } = data.nativeEvent.coordinate;
+    const markerId = Date.now().toString(); // Opret et unikt ID for markøren
     const newMarker = {
       coordinate: { latitude, longitude },
-      key: data.nativeEvent.timestamp,
+      key: markerId, // Brug det genererede ID som markørens ID
       title: "Great place"
     };
     setMarkers([...markers, newMarker]);
     
     // Kald selectImage med lokationen for den nye markør
     console.log("Marker location:", { latitude, longitude });
-    selectImage({ latitude, longitude }); // Overfør lokationen som et objekt
+    selectImage({ latitude, longitude }, markerId); // Overfør lokationen og markørens ID som et objekt
   }
 
   function onMarkerPressed(imageURL, coordinate) {
@@ -225,15 +225,11 @@ const styles = StyleSheet.create({
     width: 350,
     marginTop: 3,
     elevation: 5, 
-
-
   },
   closeButtonText: {
     fontSize: 16,
     color: 'black',
     textAlign: 'center',
-
-
   },
   image: {
     width: 350,
@@ -258,4 +254,3 @@ const styles = StyleSheet.create({
   },
 
 });
-
