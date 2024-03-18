@@ -132,9 +132,11 @@ export default function App() {
 
   function addMarker(data) {
     const { latitude, longitude } = data.nativeEvent.coordinate;
+    const markerId = Date.now().toString(); // Generer et unikt ID for markøren
     const newMarker = {
       coordinate: { latitude, longitude },
-      key: data.nativeEvent.timestamp,
+      key: markerId, // Brug det genererede ID som markørens nøgle
+      id: markerId, // Brug det genererede ID også som markørens ID
       title: "Great place"
     };
     setMarkers([...markers, newMarker]);
@@ -163,7 +165,7 @@ export default function App() {
         {markers.map((marker, index) => (
           <Marker
             coordinate={marker.coordinate}
-            key={index}
+            key={marker.key} // Brug markørens nøgle som dens unikke identifikator
             title={marker.title}
             onPress={() => onMarkerPressed(marker.imageURL, marker.coordinate)}
           />
@@ -201,7 +203,6 @@ export default function App() {
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -225,15 +226,11 @@ const styles = StyleSheet.create({
     width: 350,
     marginTop: 3,
     elevation: 5, 
-
-
   },
   closeButtonText: {
     fontSize: 16,
     color: 'black',
     textAlign: 'center',
-
-
   },
   image: {
     width: 350,
@@ -256,6 +253,5 @@ const styles = StyleSheet.create({
     color: 'black',
     textAlign: 'center',
   },
-
 });
 
